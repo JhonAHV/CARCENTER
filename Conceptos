@@ -1,0 +1,7 @@
+1. Compilador
+2. Clase: Plantilla para crear objetos
+   Objeto: Representación abstracta de un ente de la vida real
+3. d
+4. d
+5. Es una interfaz para que la aplicaciones se comuniquen y compartan datos
+6. Rest es una interfaz utilizada para la comunicación de varios sistemas utilizando el protocolo http, a diferencia con SOAP, SOAP ofrecen mas seguridad y estadares cómo ACID, Rest gracias a el uso de formatos de datos livianos le permite ser mas flexible y preferido para entornos moviles  
