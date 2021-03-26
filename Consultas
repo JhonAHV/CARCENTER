@@ -1,0 +1,37 @@
+SELECT P.PersonaPrimerNombre, P.PersonaPrimerApellido
+FROM Personas P
+INNER JOIN Clientes C ON (P.PersonaID = C.ClienteID)
+INNER JOIN Facturas F ON (F.ClienteId = C.ClienteID)
+INNER JOIN DetalleFacturas DF ON (DF.FacturaId = F.FacturaId)
+WHERE F.FacturaFecha >= GETDATE()-60
+GROUP BY P.PersonaPrimerNombre, P.PersonaPrimerApellido
+HAVING SUM(DF.DetFacturaCantidad * DF.DetFacturaPrecio) > 100000;
+
+SELECT TOP 100 I.ItemDescripcion, SUM(DF.DetFacturaCantidad) CantidadVendida
+FROM Items I
+INNER JOIN DetalleFacturas DF ON (DF.ItemID = I.ItemID)
+INNER JOIN Facturas F ON (F.FacturaId = DF.FacturaId)
+WHERE F.FacturaFecha >= GETDATE()-30
+GROUP BY I.ItemDescripcion
+
+SELECT T.TiendaNombre
+FROM Tiendas T
+INNER JOIN Facturas F ON (T.TiendaId = F.TiendaId)
+INNER JOIN DetalleFacturas DF ON (DF.FacturaId = F.FacturaId)
+WHERE F.FacturaFecha >= GETDATE()-60
+AND DF.ItemID = 100
+GROUP BY T.TiendaNombre
+HAVING SUM(DF.DetFacturaCantidad) > 100
+
+
+SELECT P.PersonaPrimerNombre, P.PersonaPrimerApellido
+FROM Personas P
+INNER JOIN Clientes C ON (P.PersonaID = C.ClienteID)
+INNER JOIN VehiculosCliente V ON (C.ClienteID = V.ClienteID)
+INNER JOIN SolicitudMantenimiento S ON (S.VehiculoId = V.VehiculoId)
+INNER JOIN OrdenMantenimiento O ON (O.SolicitudID = S.SolicitudID)
+WHERE O.OrdenFecha >= GETDATE()-30
+GROUP BY P.PersonaPrimerNombre, P.PersonaPrimerApellido
+HAVING COUNT(O.OrdenId) > 1;
+
+
