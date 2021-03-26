@@ -1,0 +1,43 @@
+CREATE PROCEDURE SP_ActualizaInventario @FacturaId nvarchar(30)
+AS
+DECLARE @Tienda INT
+DECLARE @Item INT
+DECLARE @Cantidad INT
+
+DECLARE Factura_Cursor CURSOR
+FOR SELECT F.TiendaId, DF.ItemID, SUM(DF.DetFacturaCantidad) Cantidad
+FROM DetalleFacturas DF
+INNER JOIN Facturas F ON (DF.FacturaId = F.FacturaId)
+WHERE F.FacturaId = @FacturaId
+GROUP BY F.TiendaId, DF.ItemID;
+
+OPEN Factura_Cursor;  
+FETCH NEXT FROM Factura_Cursor INTO @Tienda, @Item, @Cantidad;  
+WHILE @@FETCH_STATUS = 0  
+   BEGIN
+      UPDATE Inventario
+	  SET InvCantidad = InvCantidad - @Cantidad
+	  WHERE TiendaId = @Tienda
+	    AND ItemId = @Item;
+      FETCH NEXT FROM Factura_Cursor;  
+   END;  
+CLOSE Factura_Cursor;  
+
+DEALLOCATE Factura_Cursor;  
+GO
+
+
+CREATE TRIGGER ActualizaInventario
+ON Facturas 
+ AFTER INSERT
+ AS  
+BEGIN
+ Declare @Factura INT;
+ SELECT @Factura = ins.FacturaId FROM inserted ins;
+
+ DECLARE	@return_value int
+ EXEC	@return_value = SP_ActualizaInventario
+		@FacturaId = @Factura
+
+ SELECT	'Return Value' = @return_value
+END;
