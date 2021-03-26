@@ -1,0 +1,143 @@
+/*Teniendo en cuenta que los datos que se deben almacenar de clientes y mecánicos son los mismos, a excepción del estado del mecanico, decido crear una tabla de personas
+la cual permite que una persona ingresada pueda ser mecanico y cliente, sin tener que almacenar los datos dos veces*/
+
+CREATE TABLE Personas(
+PersonaID int NOT NULL,
+PersonaPrimerNombre varchar(30) NOT NULL,
+PersonaSegundoNombre varchar(30),
+PersonaPrimerApellido varchar(30) NOT NULL,
+PersonaSegundoApellido varchar(30),
+PersonaTipoDocumento varchar(100) NOT NULL,
+PersonaDocumento varchar(20) NOT NULL,
+PersonaCelular varchar(20),
+PersonaDireccion varchar(150),
+PersonaCorreoElectronico varchar(100),
+CONSTRAINT PK_Persona PRIMARY KEY (PersonaID)
+);
+
+/*Creo un constraint como unico para evitar que pueda repetirse el cliente, se almacena en una tabla aparte ya que a futuro puede tener información adicional*/
+CREATE TABLE Clientes(
+ ClienteID INT NOT NULL,
+ PersonaID INT NOT NULL
+);
+ALTER TABLE Clientes ADD CONSTRAINT PK_Cliente PRIMARY KEY (ClienteID);
+ALTER TABLE Clientes ADD CONSTRAINT FK_ClientePersona FOREIGN KEY (PersonaID) REFERENCES Personas(PersonaID);
+ALTER TABLE Clientes ADD CONSTRAINT UC_ClientePersona UNIQUE (PersonaID); 
+
+
+CREATE TABLE Mecanicos(
+ MecanicoID INT NOT NULL,
+ PersonaID INT NOT NULL,
+ MecanicoEstado VARCHAR(20)
+ CONSTRAINT PK_Mecanico PRIMARY KEY (MecanicoID),
+ CONSTRAINT FK_MecanicoPersona FOREIGN KEY (PersonaID) REFERENCES Personas(PersonaID),
+ CONSTRAINT UC_MecanicoPersona UNIQUE (PersonaID)
+);
+
+CREATE TABLE VehiculosCliente(
+ VehiculoId INT NOT NULL,
+ ClienteID INT NOT NULL,
+ VehiculoPlaca VARCHAR(10) NOT NULL
+);
+ALTER TABLE VehiculosCliente ADD CONSTRAINT PK_Vehiculo PRIMARY KEY (VehiculoId);
+ALTER TABLE VehiculosCliente ADD CONSTRAINT FK_VehiculoCliente FOREIGN KEY (ClienteID) REFERENCES Clientes(ClienteID);
+ALTER TABLE VehiculosCliente ADD CONSTRAINT UC_VehiculoPlaca UNIQUE (VehiculoPlaca);
+
+
+/*Creo una sola tabla de items ya que los servicios y los repuestos tienen caracteristicas similares
+los datos futuros que difieran entre servicios y repuestos puede almacenarse en una nueva tabla con una relación 1 a 1*/
+CREATE TABLE Items(
+ ItemID INT NOT NULL,
+ ItemDescripcion VARCHAR(30) NOT NULL,
+ ItemTipo VARCHAR(10) NOT NULL,--El tipo define si es servicio o es Repuesto
+ ItemIVA NUMERIC(18,3) NOT NULL,
+ ItemPrecio NUMERIC(18,3) NOT NULL,
+ ItemUnidadMedida VARCHAR(3) NOT NULL,
+ ItemPrecioMinimo NUMERIC(18,3),
+ ItemPrecioMaximo NUMERIC(18,3)
+);
+ALTER TABLE Items ADD CONSTRAINT PK_Item PRIMARY KEY (ItemID);
+
+CREATE TABLE SolicitudMantenimiento(
+ SolicitudID INT NOT NULL,
+ VehiculoId INT NOT NULL,
+ SolicitudFecha DATETIME NOT NULL,
+ SolicitudPresupuesto NUMERIC(18,3)
+);
+ALTER TABLE SolicitudMantenimiento ADD CONSTRAINT PK_Solicitud PRIMARY KEY (SolicitudID);
+ALTER TABLE SolicitudMantenimiento ADD CONSTRAINT FK_SolicitudVehiculo FOREIGN KEY (VehiculoId) REFERENCES VehiculosCliente(VehiculoId);
+
+CREATE TABLE FotosSolicitud(
+ FotoId INT NOT NULL,
+ SolicitudID INT NOT NULL,
+ FotoImagen IMAGE
+);
+ALTER TABLE FotosSolicitud ADD CONSTRAINT PK_FotosSolicitud PRIMARY KEY (FotoId);
+ALTER TABLE FotosSolicitud ADD CONSTRAINT FK_FotosSolicitud FOREIGN KEY (SolicitudID) REFERENCES SolicitudMantenimiento(SolicitudID);
+
+CREATE TABLE Tiendas(
+ TiendaId INT NOT NULL,
+ TiendaNombre VARCHAR(50),
+ TiendaDireccion VARCHAR(30)
+);
+ALTER TABLE Tiendas ADD CONSTRAINT PK_Tienda PRIMARY KEY (TiendaId);
+
+CREATE TABLE Facturas(
+ FacturaId INT NOT NULL,
+ FacturaFecha DATE NOT NULL,
+ TiendaId INT NOT NULL,
+ ClienteId INT NOT NULL
+ );
+ALTER TABLE Facturas ADD CONSTRAINT PK_Factura PRIMARY KEY (FacturaId);
+ALTER TABLE Facturas ADD CONSTRAINT FK_FacturaTienda FOREIGN KEY (TiendaId) REFERENCES Tiendas(TiendaId);
+ALTER TABLE Facturas ADD CONSTRAINT FK_FacturaCliente FOREIGN KEY (ClienteId) REFERENCES Clientes(ClienteId);
+
+
+CREATE TABLE DetalleFacturas(
+ FacturaId INT NOT NULL,
+ ItemID INT NOT NULL,
+ DetFacturaCantidad NUMERIC(18,3) NOT NULL,
+ DetFacturaPrecio NUMERIC(18,3) NOT NULL,
+ DetFacturaDescuento NUMERIC(18,3)
+);
+ALTER TABLE DetalleFacturas ADD CONSTRAINT FK_FacturaDetalle FOREIGN KEY (FacturaId) REFERENCES Facturas(FacturaId);
+ALTER TABLE DetalleFacturas ADD CONSTRAINT FK_FacturaDetalleItem FOREIGN KEY (ItemID) REFERENCES Items(ItemID);
+ALTER TABLE DetalleFacturas ADD CONSTRAINT PK_DetalleFactura PRIMARY KEY (FacturaId,ItemID);
+
+CREATE TABLE OrdenMantenimiento(
+ OrdenId INT NOT NULL,
+ OrdenFecha DATE NOT NULL,
+ SolicitudID INT NOT NULL,
+ MecanicoID INT NOT NULL,
+ Estado VARCHAR(20) NOT NULL,
+ FacturaId INT
+);
+ALTER TABLE OrdenMantenimiento ADD CONSTRAINT PK_Orden PRIMARY KEY (OrdenId);
+ALTER TABLE OrdenMantenimiento ADD CONSTRAINT FK_OrdenSolicitud FOREIGN KEY (SolicitudID) REFERENCES SolicitudMantenimiento(SolicitudID);
+ALTER TABLE OrdenMantenimiento ADD CONSTRAINT FK_OrdenMecanico FOREIGN KEY (MecanicoID) REFERENCES Mecanicos(MecanicoID);
+ALTER TABLE OrdenMantenimiento ADD CONSTRAINT FK_OrdenFactura FOREIGN KEY (FacturaId) REFERENCES Facturas(FacturaId);
+ALTER TABLE OrdenMantenimiento ADD CONSTRAINT UC_OrdenSolicitud UNIQUE (SolicitudID);
+
+CREATE TABLE DetalleOrden(
+ OrdenId INT NOT NULL,
+ ItemID INT NOT NULL,
+ DetOrdenCantidad NUMERIC(18,3) NOT NULL
+);
+ALTER TABLE DetalleOrden ADD CONSTRAINT FK_DetalleOrden FOREIGN KEY (OrdenId) REFERENCES OrdenMantenimiento(OrdenId);
+ALTER TABLE DetalleOrden ADD CONSTRAINT FK_DetalleItem FOREIGN KEY (ItemID) REFERENCES Items(ItemID);
+ALTER TABLE DetalleOrden ADD CONSTRAINT PK_DetalleOrden PRIMARY KEY (OrdenId,ItemID);
+
+CREATE TABLE Inventario(
+ TiendaId INT NOT NULL,
+ ItemId INT NOT NULL,
+ InvCantidad NUMERIC(18,3)
+);
+ALTER TABLE Inventario ADD CONSTRAINT FK_InvTienda FOREIGN KEY (TiendaId) REFERENCES Tiendas(TiendaId);
+ALTER TABLE Inventario ADD CONSTRAINT FK_InvItem FOREIGN KEY (ItemId) REFERENCES Items(ItemId);
+ALTER TABLE Inventario ADD CONSTRAINT PK_Inventario PRIMARY KEY (TiendaId,ItemId);
+
+
+
+
+	 
+  
